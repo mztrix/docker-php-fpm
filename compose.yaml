@@ -1,0 +1,16 @@
+x-php-attributes: &php-attributes
+  image: ${IMAGES_PREFIX:-mztrix/php-fpm}
+  build:
+    context: .
+    target: base
+  restart: unless-stopped
+  healthcheck:
+    test: [ "CMD", "/usr/local/bin/healthcheck.sh" ]
+    interval: 1s
+    timeout: 1s
+    retries: 3
+  command: ["php-fpm", "-F"]
+
+services:
+  php:
+    <<: *php-attributes
