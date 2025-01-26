@@ -19,7 +19,7 @@ RUN echo -e "\e[1;33m===> Creating www-data user to execute PHP-FPM\e[0m"; \
 
 
 # Install PHP and required dependencies
-RUN RUN echo -e "\e[1;33m===> Installing PHP and required packages\e[0m"; \
+RUN echo -e "\e[1;33m===> Installing PHP and required packages\e[0m"; \
     apk --no-cache add php84 php84-fpm fcgi php84-apcu;
 
 # Create symlinks for PHP and PHP-FPM binaries
