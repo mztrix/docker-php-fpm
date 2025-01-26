@@ -32,7 +32,7 @@ RUN echo -e "\e[1;33m===> Copy php.ini to /etc/php84/php.ini \e[0m";
 COPY --link .docker/php.ini /etc/php84/php.ini
 
 RUN echo -e "\e[1;33m===> Copy php.ini to /etc/php84/php.ini \e[0m";
-COPY --link .docker/php-fpm.d/www.conf /etc/php84/php-fpm.d/php.conf
+COPY --link .docker/php-fpm.d/www.conf /etc/php84/php-fpm.d/www.conf
 
 RUN echo -e "\e[1;33m===> Add volume on /var/run/php for php-fpm sock \e[0m";
 VOLUME /var/run/php
