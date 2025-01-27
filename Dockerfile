@@ -1,6 +1,11 @@
 # syntax=docker/dockerfile:1.4
 
-FROM mztrix/alpine  AS base
+FROM alpine as base
+
+# Update the package index and add required packages
+RUN echo -e "\e[1;33m===> Updating package index\e[0m"; \
+    apk update --no-progress; \
+    apk add --no-cache alpine-keys;
 
 # Set the working directory
 WORKDIR /var/www
