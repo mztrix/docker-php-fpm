@@ -38,12 +38,17 @@ RUN echo -e "\e[1;33m===> Add volume on /var/run/php for php-fpm sock \e[0m";
 VOLUME /var/run/php
 
 # Add custom healthcheck script
-COPY --link .docker/healthcheck.sh /usr/local/bin/healthcheck.sh
-RUN chmod +x /usr/local/bin/healthcheck.sh
+COPY --link .docker/healthcheck.sh /usr/local/bin/healthcheck
+RUN chmod +x /usr/local/bin/healthcheck
 
 # unused files to reduce image size
 RUN echo -e "\e[1;33m===> Cleaning up unused files\e[0m"; \
     rm -rf /var/cache/apk/*;
+
+
+# Add entrypoiny script
+COPY --link .docker/php-entrypoint.sh /usr/local/bin/php-entrypoint
+RUN chmod +x /usr/local/bin/php-entrypoint
 
 # Add a healthcheck directive for container monitoring
 HEALTHCHECK  \
@@ -51,7 +56,9 @@ HEALTHCHECK  \
   --timeout=5s  \
   --start-period=10s  \
   --retries=3 \
-  CMD ["/usr/local/bin/healthcheck.sh"]
+  CMD ["healthcheck"]
+
+ENTRYPOINT ["php-entrypoint"]
 
 # Set the default command to run PHP-FPM in the foreground
 CMD ["php-fpm", "-F"]
