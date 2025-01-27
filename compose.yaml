@@ -5,10 +5,11 @@ x-php-attributes: &php-attributes
     target: base
   restart: unless-stopped
   healthcheck:
-    test: [ "CMD", "/usr/local/bin/healthcheck.sh" ]
+    test: [ "CMD", "healthcheck" ]
     interval: 1s
     timeout: 1s
     retries: 3
+  entrypoint: ["php-entrypoint"]
   command: ["php-fpm", "-F"]
 
 services:
