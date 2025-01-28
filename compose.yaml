@@ -9,8 +9,8 @@ x-php-attributes: &php-attributes
     interval: 1s
     timeout: 1s
     retries: 3
-  entrypoint: ["php-entrypoint"]
-  command: ["php-fpm", "-F"]
+  entrypoint: ["docker-entrypoint"]
+  command: ["php-fpm"]
 
 services:
   php:

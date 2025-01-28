@@ -2,60 +2,58 @@
 
 FROM alpine as base
 
-# Update the package index and add required packages
-RUN echo -e "\e[1;33m===> Updating package index\e[0m"; \
-    apk update --no-progress; \
-    apk add --no-cache alpine-keys;
+# Update the package index and add the required Alpine keys
+RUN set -eux; \
+    echo -e "\e[1;33m===> Updating the package index and adding Alpine keys\e[0m"; \
+    apk update --no-progress && apk add --no-cache alpine-keys;
 
-# Set the working directory
+# Set the working directory for the application
 WORKDIR /var/www
 
-# Create the www-data user for PHP-FPM
-RUN echo -e "\e[1;33m===> Creating www-data user to execute PHP-FPM\e[0m"; \
-    apk --no-cache add shadow; \
-    echo -e "\e[1;33m===> add shadow to use addgroup and adduser \e[0m"; \
-    addgroup -g 82 www-data; \
-    adduser -D -u 82 -G www-data -s /sbin/nologin www-data; \
+# Create the www-data user for PHP-FPM with appropriate permissions
+RUN set -eux; \
+    echo -e "\e[1;33m===> Creating www-data user for PHP-FPM\e[0m"; \
+    adduser -D -u 82 -S -G www-data -s /sbin/nologin www-data; \
     echo -e "\e[1;33m===> www-data user created with UID 82 and GID 82\e[0m"; \
     chown -R www-data:www-data .; \
-    echo -e "\e[1;33m===> Ownership of /var/www set to www-data:www-data\e[0m"; \
-    apk --no-cache del shadow; \
-    echo -e "\e[1;33m===> Ownership of /var/www set to www-data:www-data\e[0m";
+    echo -e "\e[1;33m===> Set ownership of /var/www to www-data:www-data\e[0m";
 
-
-# Install PHP and required dependencies
-RUN echo -e "\e[1;33m===> Installing PHP and required packages\e[0m"; \
+# Install PHP and essential dependencies
+RUN set -eux; \
+    echo -e "\e[1;33m===> Installing PHP and required dependencies\e[0m"; \
     apk --no-cache add php84 php84-fpm fcgi php84-apcu;
 
-# Create symlinks for PHP and PHP-FPM binaries
-RUN echo -e "\e[1;33m===> Creating symlinks for PHP and PHP-FPM binaries\e[0m"; \
+# Create symlinks for PHP and PHP-FPM binaries in standard locations
+RUN set -eux; \
+    echo -e "\e[1;33m===> Creating symlinks for PHP and PHP-FPM binaries\e[0m"; \
     ln -sf /usr/bin/php84 /usr/local/bin/php; \
-    mkdir -p /usr/local/sbin/; \
-    ln -sf /usr/sbin/php-fpm84 /usr/local/sbin/php-fpm;
+    mkdir -p /usr/local/sbin && ln -sf /usr/sbin/php-fpm84 /usr/local/sbin/php-fpm;
 
-RUN echo -e "\e[1;33m===> Copy php.ini to /etc/php84/php.ini \e[0m";
+# Copy php.ini to the appropriate directory
+RUN echo -e "\e[1;33m===> Copying php.ini to /etc/php84/php.ini \e[0m";
 COPY --link .docker/php.ini /etc/php84/php.ini
 
-RUN echo -e "\e[1;33m===> Copy php.ini to /etc/php84/php.ini \e[0m";
+# Copy the PHP-FPM configuration file
+RUN echo -e "\e[1;33m===> Copying PHP-FPM configuration to /etc/php84/php-fpm.d/www.conf \e[0m";
 COPY --link .docker/php-fpm.d/www.conf /etc/php84/php-fpm.d/www.conf
 
-RUN echo -e "\e[1;33m===> Add volume on /var/run/php for php-fpm sock \e[0m";
+# Define a volume for the PHP-FPM socket
+RUN echo -e "\e[1;33m===> Adding volume for PHP-FPM socket at /var/run/php \e[0m";
 VOLUME /var/run/php
 
-# Add custom healthcheck script
+# Add a custom healthcheck script for monitoring container health
 COPY --link .docker/healthcheck.sh /usr/local/bin/healthcheck
 RUN chmod +x /usr/local/bin/healthcheck
 
-# unused files to reduce image size
-RUN echo -e "\e[1;33m===> Cleaning up unused files\e[0m"; \
+# Clean up unused files to reduce image size
+RUN echo -e "\e[1;33m===> Cleaning up unused files to reduce image size\e[0m"; \
     rm -rf /var/cache/apk/*;
 
+# Add the Docker entrypoint script
+COPY --link .docker/docker-entrypoint.sh /usr/local/bin/docker-entrypoint
+RUN set -eux; chmod +x /usr/local/bin/docker-entrypoint
 
-# Add entrypoiny script
-COPY --link .docker/php-entrypoint.sh /usr/local/bin/php-entrypoint
-RUN chmod +x /usr/local/bin/php-entrypoint
-
-# Add a healthcheck directive for container monitoring
+# Define a healthcheck command for the container
 HEALTHCHECK  \
   --interval=10s  \
   --timeout=5s  \
@@ -63,7 +61,8 @@ HEALTHCHECK  \
   --retries=3 \
   CMD ["healthcheck"]
 
-ENTRYPOINT ["php-entrypoint"]
+# Set the default entrypoint script
+ENTRYPOINT ["docker-entrypoint"]
 
 # Set the default command to run PHP-FPM in the foreground
-CMD ["php-fpm", "-F"]
+CMD ["php-fpm"]
