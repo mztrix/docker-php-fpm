@@ -21,7 +21,9 @@ RUN set -eux; \
 # Install PHP and essential dependencies
 RUN set -eux; \
     echo -e "\e[1;33m===> Installing PHP and required dependencies\e[0m"; \
-    apk --no-cache add php84 php84-fpm fcgi php84-apcu;
+    apk --no-cache add php84 php84-fpm fcgi php84-apcu php84-opcache;
+
+
 
 # Create symlinks for PHP and PHP-FPM binaries in standard locations
 RUN set -eux; \
@@ -32,6 +34,10 @@ RUN set -eux; \
 # Copy php.ini to the appropriate directory
 RUN echo -e "\e[1;33m===> Copying php.ini to /etc/php84/php.ini \e[0m";
 COPY --link .docker/php.ini /etc/php84/php.ini
+
+# Copy the OPcache configuration file
+RUN echo -e "\e[1;33m===> Copying OPcache configuration to /etc/php84/conf.d/ \e[0m";
+COPY --link .docker/conf.d/00_opcache.ini /etc/php84/conf.d/
 
 # Copy the PHP-FPM configuration file
 RUN echo -e "\e[1;33m===> Copying PHP-FPM configuration to /etc/php84/php-fpm.d/www.conf \e[0m";
