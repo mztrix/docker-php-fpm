@@ -71,4 +71,4 @@ HEALTHCHECK  \
 ENTRYPOINT ["docker-entrypoint"]
 
 # Set the default command to run PHP-FPM in the foreground
-CMD ["php-fpm"]
+CMD ["php-fpm", "-F"]
