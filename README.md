@@ -4,13 +4,13 @@ This repository provides an optimized Docker image for PHP-FPM, based on **Alpin
 
 ## Features
 
-- **🌍 Small Footprint**: A base image of less than 38MB, promoting resource preservation and efficiency.
+- **Small Footprint**: A base image of less than 38MB, promoting resource preservation and efficiency.
 
-- **🐘 PHP-FPM**: Integrated for efficient PHP process management, featuring like `opcache`, `fcgi`, and `apcu`. Utilizes Unix socket mode for enhanced performance and inter-process communication.
+- **PHP-FPM**: Integrated for efficient PHP process management, featuring like `opcache`, `fcgi`, and `apcu`. Utilizes Unix socket mode for enhanced performance and inter-process communication.
 
-- **❤️ Healthcheck** includes a built-in healthcheck endpoint (`/ping`) that responds with `pong`, ensuring the container's readiness and uptime.
+- **Healthcheck** includes a built-in healthcheck endpoint (`/ping`) that responds with `pong`, ensuring the container's readiness and uptime.
 
-- **🛡️ Secure Defaults**: Includes minimal packages, reducing the attack surface.
+- **Secure Defaults**: Includes minimal packages, reducing the attack surface.
 
 ## Project Structure
 
