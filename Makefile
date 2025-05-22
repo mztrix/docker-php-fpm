@@ -3,7 +3,8 @@
 # Override via environment:
 IMAGE_NAME ?= mztrix/php-fpm
 VERSION    ?= 1.0
-PLATFORMS  ?= linux/amd64,linux/arm64,linux/arm/v7
+PLATFORMS  ?= linux/arm64,linux/amd64,linux/amd64/v2,linux/riscv64,linux/ppc64le,linux/s390x,linux/386,linux/arm/v7,linux/arm/v6
+#PLATFORMS  ?= linux/amd64,linux/arm64,linux/arm/v7
 BUILDER    ?= multiarch
 
 .DEFAULT_GOAL := help
