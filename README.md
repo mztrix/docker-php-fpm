@@ -1,204 +1,20 @@
-# Docker FPM
+# mztrix/docker-php-fpm
 
-This repository provides an optimized Docker image for PHP-FPM, based on **Alpine Linux**. It is designed to offer a lightweight and flexible solution for developers and system administrators deploying PHP applications in containers.
+[![Docker Hub](https://img.shields.io/badge/Docker%20Hub-mztrix%2Fphp--fpm-2496ed?logo=docker)](https://hub.docker.com/r/mztrix/php-fpm)
+[![Docker Pulls](https://img.shields.io/docker/pulls/mztrix/php-fpm?logo=docker)](https://hub.docker.com/r/mztrix/php-fpm)
+[![Image Size](https://img.shields.io/docker/image-size/mztrix/php-fpm/latest?logo=docker)](https://hub.docker.com/r/mztrix/php-fpm/tags)
 
-## Features
+[![PHP](https://img.shields.io/badge/PHP-8.4-777bb3?logo=php&logoColor=white)](https://www.php.net/releases/8.4/en.php)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-- **Small Footprint**: A base image of less than 38MB, promoting resource preservation and efficiency.
+provides an optimized Docker image for PHP-FPM, based on **Alpine Linux**. It is designed to offer a lightweight and flexible solution for developers and system administrators deploying PHP applications in containers.
 
-- **PHP-FPM**: Integrated for efficient PHP process management, featuring like `opcache`, `fcgi`, and `apcu`. Utilizes Unix socket mode for enhanced performance and inter-process communication.
-
-- **Healthcheck** includes a built-in healthcheck endpoint (`/ping`) that responds with `pong`, ensuring the container's readiness and uptime.
-
-- **Secure Defaults**: Includes minimal packages, reducing the attack surface.
-
-## Project Structure
-
-Here is the project structure:
-
-```plaintext
-.
-├── .docker/                    # Directory for custom Docker configurations
-│   ├── conf.d/                 # Directory for additional PHP configuration files (loaded via `php.ini`)
-│   │   └── 00_opcache.ini      # Configuration file for PHP OPcache settings to optimize performance
-│   ├── php-fpm.d/              # Directory containing PHP-FPM-specific configuration files
-│   │   └── www.conf            # PHP-FPM pool configuration file for process and resource management
-│   ├── docker-entrypoint.sh    # Custom entrypoint script executed when the container starts
-│   ├── healthcheck.sh          # Script for defining health checks for containers
-│   └── php.ini                 # PHP configuration file (INI format) for customizing runtime settings
-├── compose.override.yaml.dist  # Example override file for extending or customizing Docker Compose settings
-├── compose.yaml                # Primary Docker Compose file for defining multi-container configurations
-├── Dockerfile                  # Dockerfile defining the base image and build instructions
-└── compose.yaml                # Duplicate entry — ensure only one compose.yaml exists in your structure
-```
-
-## Configuration Files Content
-
-### `php.ini`
-
-This file provides optimized PHP settings tailored for Symfony and PHP-FPM environments. Example content:
-
-```ini
-; -------------------------
-; PHP General Configuration
-; -------------------------
-
-memory_limit = 512M                 ; Increase memory limit to handle resource-intensive scripts
-max_execution_time = 60             ; Extend execution time to avoid timeouts on long-running scripts
-error_reporting = E_ALL             ; Suppress deprecated and strict notices to reduce log noise
-display_errors = Off                ; Keep disabled in production to prevent exposing sensitive information
-log_errors = On                     ; Enable error logging
-default_charset = UTF-8             ; Keep UTF-8 as the default character encoding
-file_uploads = On                   ; Enable file uploads
-upload_max_filesize = 128M          ; Increase max upload file size to support larger uploads
-post_max_size = 128M                ; Must be equal or larger than `upload_max_filesize` to allow large POST requests
-date.timezone = UTC                 ; Keep UTC for consistent time handling
-
-; ----------------
-; Security Settings
-; ----------------
-
-disable_functions = exec, system, shell_exec, passthru, show_source, popen, pclose
-expose_php = Off                      ; Prevent PHP version exposure in HTTP headers
-
-; -----------------
-; Session Management
-; -----------------
-
-session.cookie_secure = On           ; Ensure session cookies are only sent over secure HTTPS connections
-session.cookie_httponly = On         ; Prevent JavaScript access to session cookies
-session.use_strict_mode = 1          ; Enforce strict session ID validation
-session.save_path = /var/lib/php/sessions ; Path where session files are stored
-;session.save_path = /tmp  ; Store PHP session files in a temporary directory inside the container
-; --------------------
-; Error Handling
-; --------------------
-
-display_startup_errors = Off         ; Disable startup error messages (recommended for production)
-track_errors = Off                   ; Disable storing errors in PHP variables (reduces memory consumption)
-
-; --------------------
-; Filesystem Performance Optimization
-; --------------------
-
-realpath_cache_size = 8192k          ; Increase realpath cache size to improve file system performance
-realpath_cache_ttl = 120             ; Increase TTL to reduce the frequency of filesystem path lookups
-```
-
-### `php-fpm.d/www.conf`
-
-This file configures specific settings for PHP-FPM. Example content:
-
-```ini
-; ===============================
-; PHP-FPM - GLOBAL CONFIGURATION
-; ===============================
-
-[global]
-; Define the error log file.
-; Here, errors are redirected to standard error (stderr) for Docker container logging.
-error_log = /dev/stderr
-
-; Define the verbosity level of logs generated by PHP-FPM.
-; Available options:
-;   - debug   : Very detailed logs (useful for advanced debugging)
-;   - notice  : Intermediate logs (recommended for a balance between detail and performance)
-;   - warning : Only warnings and alerts are logged
-;   - error   : Only critical errors are logged
-log_level = notice                
-
-; ===============================
-; CONFIGURATION OF THE "WWW" POOL
-; ===============================
-
-[www]  ; Define the pool name (default is "www")
-; Define the user and group under which PHP-FPM processes will run.
-user = www-data                   
-group = www-data                   
-
-; ===============================
-; SOCKET LISTENING CONFIGURATION
-; ===============================
-
-; Use a Unix socket for better performance instead of a TCP port.
-listen = /var/run/php/www.sock
-
-; Define socket permissions to allow communication with the web server.
-listen.owner = www-data           ; Set the user who owns the socket
-listen.group = www-data           ; Set the group that owns the socket
-listen.mode = 0660                ; Access permissions (read/write for user/group only)
-
-; ===============================
-; PROCESS MANAGER (PM) CONFIGURATION
-; ===============================
-
-; Define the process management mode for PHP-FPM.
-; Available options:
-;   - static   : A fixed number of child processes is always running (defined by pm.max_children).
-;   - dynamic  : Processes are created and removed based on traffic load.
-;                - Starts with pm.start_servers processes.
-;                - Creates new processes up to pm.max_children when needed.
-;                - Removes idle processes when exceeding pm.max_spare_servers.
-;   - ondemand : No child processes are started initially.
-;                - A process is created only when a request arrives.
-;                - Processes are terminated when they remain idle.
-pm = dynamic                      
-
-; Maximum number of child processes that can be created.
-pm.max_children = 10              
-
-; Number of processes started when PHP-FPM launches (used only for "dynamic").
-pm.start_servers = 3              
-
-; Minimum number of idle child processes that should be available.
-pm.min_spare_servers = 2          
-
-; Maximum number of idle child processes allowed.
-pm.max_spare_servers = 5          
-
-; ===============================
-; ACCESS LOG CONFIGURATION
-; ===============================
-
-; Log HTTP requests handled by PHP-FPM (redirected to stdout for Docker logging).
-access.log = /dev/stdout
-catch_workers_output = yes
-decorate_workers_output = no
-
-; Define the log format for access logs.
-; Parameters:
-;   - %R : Client IP address
-;   - %m : HTTP method (GET, POST, etc.)
-;   - %r : Full request
-;   - %s : HTTP response code
-;   - %C : Execution time in milliseconds
-access.format = "%R - %m %r - %s - %C"
-
-; ===============================
-; ENVIRONMENT VARIABLES CONFIGURATION
-; ===============================
-
-; Retain environment variables defined in the execution environment.
-; By default, PHP-FPM clears these variables for security reasons.
-; "no" means variables will be accessible from PHP (e.g., $_ENV, getenv()).
-clear_env = no                    
-
-; ===============================
-; MONITORING ENDPOINTS CONFIGURATION
-; ===============================
-
-; Define a health check endpoint to verify PHP-FPM status.
-; A request to "/ping" will return the response "pong" if the service is running correctly.
-ping.path = /ping                 
-ping.response = pong              
-
-; ===============================
-; SECURITY SETTINGS CONFIGURATION
-; ===============================
-
-; Restrict PHP-FPM execution to only files with a .php extension.
-security.limit_extensions = .php  
-```
+## Table of Contents
+- Prerequisites
+- Overview
+- Quick Start
+- Usage with Docker Compose
+- License
 
 ## Prerequisites
 
@@ -210,110 +26,43 @@ The required tools depend on your use case:
 - **To use multi-container setups**:
     - **[Docker Compose](https://docs.docker.com/compose/install/)**: Required for managing multiple containers via `compose.yaml`.
 
-Ensure you have the appropriate tool installed based on your specific objectives.
+## Overview
+- Alpine-based image (Dockerfile) with PHP 8.4 FPM and essentials.
+- FPM socket at `/var/run/php/www.sock`, suitable for sharing with a reverse proxy.
+- Simple entrypoint and default command: php-fpm -F.
+- Healthcheck using cgi-fcgi that hits /ping and expects "pong".
 
----
-
-## Way to use images
-
-You can find the pre-built Docker images for this repository on Docker Hub:
-
-[Docker Hub: mztrix/php-fpm](https://hub.docker.com/r/mztrix/php-fpm/tags)
-
-### Available Docker Images
-
-- `latest`: The most up-to-date version of the image.
-
-Use the appropriate tag based on your requirements, e.g.:
-
+## Quick Start
+1) Clone and (optionally) prepare a local override
 ```bash
-docker pull mztrix/php-fpm:latest
-```
----
-
-### Build an image
-
-To build the Docker image locally, you can run:
-
-```bash
-docker build -t mztrix/php-fpm .
+git clone https://github.com/mztrix/docker-php-fpm
+cd docker-php-fpm
+cp compose.override.yaml.dist compose.override.yaml   # recommended for local use
 ```
 
-This command uses the `Dockerfile` in the repository to create an image named `mztrix/php-fpm`.
-
----
-
-### Run a container
-
-You can start the container interactively using:
-
+2) Start PHP-FPM
 ```bash
-docker run -it mztrix/php-fpm /bin/sh
+docker compose up -d --wait
+```
+This builds the local image (target: base) and starts the php service.
+
+3) Check status
+```bash
+docker compose ps
+docker compose logs -f php
 ```
 
-This will give you access to a shell session inside the container.
+## Usage with Docker Compose
+- compose.yaml defines the minimal php service.
+- compose.override.yaml(.dist) shows useful local mounts:
+  - `.docker/php.ini` -> `/etc/php84/php.ini`
+  - `.docker/php-fpm.d/www.conf `-> `/etc/php84/php-fpm.d/www.conf`
+  - fpm-sock volume -> `/var/run/php`
 
----
+Environment/build variable:
+- IMAGES_PREFIX (optional): image name prefix used by compose (defaults to mztrix/php-fpm).
 
-### Using Docker Compose
 
-For multi-container setups or simplified configurations, use Docker Compose:
-
-#### Start Services
-
-```bash
-docker compose up -d
-```
-
-#### Stop Services
-
-```bash
-docker compose down
-```
-
-#### Customization
-
-You can modify `compose.override.yaml.dist` to configure environment-specific settings, such as port mappings or volume mounts.
-
----
 
 ## License
-
-This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for more details.
-
----
-
-## Contribution
-
-Contributions are welcome! To contribute:
-
-1. Fork this repository.
-   ```shell
-   git clone git@github.com:mztrix/docker-php-fpm.git
-    ```
-2. Create a new branch:
-
-   ```bash
-   git checkout -b feature/my-feature
-   ```
-
-3. Commit your changes:
-
-   ```bash
-   git commit -m "Add my feature"
-   ```
-
-4. Push your branch:
-
-   ```bash
-   git push origin feature/my-feature
-   ```
-
-5. Open a Pull Request.
-
----
-
-## Author
-
-Created and maintained by [mztrix](https://github.com/mztrix). Contributions are welcome!
-
+MIT — see LICENSE.

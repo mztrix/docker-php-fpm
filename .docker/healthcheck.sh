@@ -1,4 +1,5 @@
 #!/bin/sh
+set -eu
 
 SOCKET_PATH="/var/run/php/www.sock"
 
