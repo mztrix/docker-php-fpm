@@ -13,5 +13,4 @@ x-php-attributes: &php-attributes
   command: ["php-fpm", "-F"]
 
 services:
-  php:
-    <<: *php-attributes
+  php: *php-attributes

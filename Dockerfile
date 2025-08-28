@@ -1,74 +1,40 @@
-# syntax=docker/dockerfile:1.4
+# syntax=docker/dockerfile:1.7
 
-FROM alpine as base
+ARG ALPINE_VERSION=latest
 
-# Update the package index and add the required Alpine keys
-RUN set -eux; \
-    echo -e "\e[1;33m===> Updating the package index and adding Alpine keys\e[0m"; \
-    apk update --no-progress && apk add --no-cache alpine-keys;
+FROM alpine:${ALPINE_VERSION} AS base
 
-# Set the working directory for the application
 WORKDIR /var/www
 
-# Create the www-data user for PHP-FPM with appropriate permissions
-RUN set -eux; \
-    echo -e "\e[1;33m===> Creating www-data user for PHP-FPM\e[0m"; \
-    adduser -D -u 82 -S -G www-data -s /sbin/nologin www-data; \
-    echo -e "\e[1;33m===> www-data user created with UID 82 and GID 82\e[0m"; \
-    chown -R www-data:www-data .; \
-    echo -e "\e[1;33m===> Set ownership of /var/www to www-data:www-data\e[0m";
-
-# Install PHP and essential dependencies
-RUN set -eux; \
-    echo -e "\e[1;33m===> Installing PHP and required dependencies\e[0m"; \
-    apk --no-cache add php84 php84-fpm fcgi php84-apcu php84-opcache;
-
-
-
-# Create symlinks for PHP and PHP-FPM binaries in standard locations
-RUN set -eux; \
-    echo -e "\e[1;33m===> Creating symlinks for PHP and PHP-FPM binaries\e[0m"; \
+RUN --mount=type=cache,target=/var/cache/apk \
+    set -eux; \
+    PHP_PACKAGES="php84 php84-fpm php84-apcu php84-opcache fcgi"; \
+    apk add --no-cache --no-progress ${PHP_PACKAGES}; \
+    adduser -u 82 -S -D -G www-data -H -s /sbin/nologin www-data; \
+    install -d -o www-data -g www-data /var/run/php; \
     ln -sf /usr/bin/php84 /usr/local/bin/php; \
-    mkdir -p /usr/local/sbin && ln -sf /usr/sbin/php-fpm84 /usr/local/sbin/php-fpm;
+    install -d /usr/local/sbin; \
+    ln -sf /usr/sbin/php-fpm84 /usr/local/sbin/php-fpm; \
+    chown -R www-data:www-data /var/www
 
-# Copy php.ini to the appropriate directory
-RUN echo -e "\e[1;33m===> Copying php.ini to /etc/php84/php.ini \e[0m";
 COPY --link .docker/php.ini /etc/php84/php.ini
-
-# Copy the OPcache configuration file
-RUN echo -e "\e[1;33m===> Copying OPcache configuration to /etc/php84/conf.d/ \e[0m";
 COPY --link .docker/conf.d/00_opcache.ini /etc/php84/conf.d/
-
-# Copy the PHP-FPM configuration file
-RUN echo -e "\e[1;33m===> Copying PHP-FPM configuration to /etc/php84/php-fpm.d/www.conf \e[0m";
 COPY --link .docker/php-fpm.d/www.conf /etc/php84/php-fpm.d/www.conf
 
-# Define a volume for the PHP-FPM socket
-RUN echo -e "\e[1;33m===> Adding volume for PHP-FPM socket at /var/run/php \e[0m";
+COPY --link .docker/healthcheck.sh /usr/local/bin/healthcheck
+COPY --link .docker/docker-entrypoint.sh /usr/local/bin/docker-entrypoint
+
+RUN set -eux; chmod +x /usr/local/bin/healthcheck /usr/local/bin/docker-entrypoint
+
 VOLUME /var/run/php
 
-# Add a custom healthcheck script for monitoring container health
-COPY --link .docker/healthcheck.sh /usr/local/bin/healthcheck
-RUN chmod +x /usr/local/bin/healthcheck
-
-# Clean up unused files to reduce image size
-RUN echo -e "\e[1;33m===> Cleaning up unused files to reduce image size\e[0m"; \
-    rm -rf /var/cache/apk/*;
-
-# Add the Docker entrypoint script
-COPY --link .docker/docker-entrypoint.sh /usr/local/bin/docker-entrypoint
-RUN set -eux; chmod +x /usr/local/bin/docker-entrypoint
-
-# Define a healthcheck command for the container
-HEALTHCHECK  \
-  --interval=10s  \
-  --timeout=5s  \
-  --start-period=10s  \
+HEALTHCHECK \
+  --interval=10s \
+  --timeout=5s \
+  --start-period=10s \
   --retries=3 \
   CMD ["healthcheck"]
 
-# Set the default entrypoint script
-ENTRYPOINT ["docker-entrypoint"]
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint"]
 
-# Set the default command to run PHP-FPM in the foreground
-CMD ["php-fpm", "-F"]
+CMD ["/usr/sbin/php-fpm84", "-F"]
