@@ -1,42 +1,93 @@
-# Makefile for mztrix/php-fpm multi-arch build & push
+# Makefile — mztrix/php-fpm
+# Usage:
+#   make publish                 # build & push amd64+arm64
+#   make publish VERSION=1.2.3   # force the version
+#   make test                    # local build (load) for your machine
+#   make inspect                 # view pushed manifests
+#   make clean-builder           # remove the builder
 
-# Override via environment:
-IMAGE_NAME ?= mztrix/php-fpm
-VERSION    ?= 1.0
-PLATFORMS  ?= linux/arm64,linux/amd64,linux/amd64/v2,linux/riscv64,linux/ppc64le,linux/s390x,linux/386,linux/arm/v7,linux/arm/v6
-#PLATFORMS  ?= linux/amd64,linux/arm64,linux/arm/v7
-BUILDER    ?= multiarch
+IMAGE        ?= mztrix/php-fpm
+
+VERSION      ?= $(shell git describe --tags --abbrev=0 2>/dev/null || echo latest)
+BUILDER      ?= mztrix-multiarch
+REGISTRY     ?= docker.io
+
+PLATFORMS := linux/amd64,linux/arm64
+
+CACHE_NAME   ?= $(REGISTRY)/$(IMAGE):cache
+
+GIT_REV      := $(shell git rev-parse --short HEAD 2>/dev/null || echo unknown)
+SRC_EPOCH    := $(shell git log -1 --format=%ct 2>/dev/null || date +%s)
+BUILD_DATE   := $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
+SOURCE_URL   := $(shell git config --get remote.origin.url 2>/dev/null || echo unknown)
+
+OCI_LABELS = \
+  org.opencontainers.image.title=$(IMAGE) \
+  org.opencontainers.image.version=$(VERSION) \
+  org.opencontainers.image.revision=$(GIT_REV) \
+  org.opencontainers.image.created=$(BUILD_DATE) \
+  org.opencontainers.image.source=$(SOURCE_URL)
+
+LABEL_FLAGS := $(foreach label,$(OCI_LABELS),--label $(label))
 
 .DEFAULT_GOAL := help
 
-.PHONY: help login setup-builder publish clean-builder
+.PHONY: help login setup-builder test publish inspect clean-builder
 
 help:
 	@echo "Usage: make [target]"
 	@echo
 	@echo "Targets:"
-	@echo "  login          Login to Docker Hub"
-	@echo "  setup-builder  Create & use '$(BUILDER)' buildx builder"
-	@echo "  publish        Build & push '$(IMAGE_NAME):$(VERSION)' + 'latest'"
-	@echo "  clean-builder  Remove '$(BUILDER)' builder (if exists)"
+	@echo "  login            Login to Docker registry ($(REGISTRY))"
+	@echo "  setup-builder    Create/activate the builder '$(BUILDER)'"
+	@echo "  test             Local build (LOAD) for the machine architecture"
+	@echo "  publish          Buildx multi-arch & push: $(IMAGE):$(VERSION) + latest"
+	@echo "  inspect          Display the pushed multi-arch manifest"
+	@echo "  clean-builder    Remove the builder"
+	@echo
+	@echo "Useful variables:"
+	@echo "  VERSION=x.y.z (default from git tag or 'main')"
 
 login:
-	docker login
+	@docker login $(REGISTRY)
 
 setup-builder:
-	docker buildx inspect $(BUILDER) >/dev/null 2>&1 || \
-		docker buildx create --name $(BUILDER) --use
+	@docker buildx inspect $(BUILDER) >/dev/null 2>&1 || docker buildx create --name $(BUILDER) --use
+	@docker buildx use $(BUILDER)
 	@docker buildx inspect --bootstrap
 
+
+test: setup-builder
+	@echo ">> Test build local ($(IMAGE):$(VERSION)-local)"
+	DOCKER_BUILDKIT=1 docker buildx build \
+		--load \
+		--pull \
+		--build-arg SOURCE_DATE_EPOCH=$(SRC_EPOCH) \
+		--provenance=true \
+		--sbom=true \
+		$(LABEL_FLAGS) \
+		--tag $(IMAGE):$(VERSION)-local \
+		.
+
 publish: login setup-builder
-	@echo "Building & pushing $(IMAGE_NAME):$(VERSION) + latest on $(PLATFORMS)"
-	docker buildx build \
+	@echo ">> Build & push $(IMAGE):$(VERSION) [$(PLATFORMS)]"
+	DOCKER_BUILDKIT=1 docker buildx build \
 		--platform $(PLATFORMS) \
-		--tag $(IMAGE_NAME):$(VERSION) \
-		--tag $(IMAGE_NAME):latest \
+		--pull \
+		--provenance=true \
+		--sbom=true \
+		--build-arg SOURCE_DATE_EPOCH=$(SRC_EPOCH) \
+		$(LABEL_FLAGS) \
+		--cache-from type=registry,ref=$(REGISTRY)/$(IMAGE):$(VERSION) \
+		--cache-to   type=inline,mode=max \
+		--tag $(IMAGE):$(VERSION) \
 		--push \
 		.
 
+inspect:
+	@echo ">> Inspecting manifest for $(IMAGE):$(VERSION)"
+	@docker buildx imagetools inspect $(IMAGE):$(VERSION)
+
 clean-builder:
-	@echo "Removing buildx builder '$(BUILDER)' (if exists)"
-	docker buildx rm $(BUILDER) || true
+	@echo ">> Removing builder '$(BUILDER)' (if exists)"
+	@docker buildx rm $(BUILDER) 2>/dev/null || true
