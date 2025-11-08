@@ -7,8 +7,7 @@
 [![PHP](https://img.shields.io/badge/PHP-8.4-777bb3?logo=php&logoColor=white)](https://www.php.net/releases/8.4/en.php)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-provides an optimized Docker image for PHP-FPM, based on **Alpine Linux**. It is designed to offer a lightweight and flexible solution for developers and system administrators deploying PHP applications in containers.
-
+An optimized Docker image for PHP applications on Alpine Linux - lightweight and flexible for developers and system administrators.
 ## Table of Contents
 - Prerequisites
 - Overview
