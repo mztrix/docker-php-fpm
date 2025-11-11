@@ -14,6 +14,8 @@ REGISTRY     ?= docker.io
 
 PLATFORMS := linux/amd64,linux/arm64
 
+STAGE_TARGET ?= base
+
 GIT_REV      := $(shell git rev-parse --short HEAD 2>/dev/null || echo unknown)
 SRC_EPOCH    := $(shell git log -1 --format=%ct 2>/dev/null || date +%s)
 BUILD_DATE   := $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
@@ -45,6 +47,7 @@ help:
 	@echo
 	@echo "Useful variables:"
 	@echo "  VERSION=x.y.z (default from git tag or 'main')"
+	@echo "  STAGE_TARGET=base|debug|... (default: base)"
 
 login:
 	@docker login $(REGISTRY)
@@ -54,23 +57,26 @@ setup-builder:
 	@docker buildx use $(BUILDER)
 	@docker buildx inspect --bootstrap
 
-
 test: setup-builder
-	@echo ">> Test build local ($(IMAGE):$(VERSION))"
+	@echo ">> Test build local ($(IMAGE):$(VERSION)) [stage=$(STAGE_TARGET)]"
 	DOCKER_BUILDKIT=1 docker buildx build \
-		--build-arg SOURCE_DATE_EPOCH=$(SRC_EPOCH) \
+		--no-cache \
+		--target $(STAGE_TARGET) \
+		--platform $(PLATFORMS) \
 		--provenance=true \
 		--sbom=true \
-		--no-cache \
+		--build-arg SOURCE_DATE_EPOCH=$(SRC_EPOCH) \
 		$(LABEL_FLAGS) \
+		--cache-to   type=inline,mode=max \
 		--tag $(IMAGE):$(VERSION) \
 		--load \
 		.
 
 publish: login setup-builder
-	@echo ">> Build & push $(IMAGE):$(VERSION) [$(PLATFORMS)]"
+	@echo ">> Build & push $(IMAGE):$(VERSION) [$(PLATFORMS)] stage=$(STAGE_TARGET)"
 	DOCKER_BUILDKIT=1 docker buildx build \
 		--no-cache \
+		--target $(STAGE_TARGET) \
 		--platform $(PLATFORMS) \
 		--provenance=true \
 		--sbom=true \
