@@ -14,8 +14,6 @@ REGISTRY     ?= docker.io
 
 PLATFORMS := linux/amd64,linux/arm64
 
-CACHE_NAME   ?= $(REGISTRY)/$(IMAGE):cache
-
 GIT_REV      := $(shell git rev-parse --short HEAD 2>/dev/null || echo unknown)
 SRC_EPOCH    := $(shell git log -1 --format=%ct 2>/dev/null || date +%s)
 BUILD_DATE   := $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
@@ -58,27 +56,26 @@ setup-builder:
 
 
 test: setup-builder
-	@echo ">> Test build local ($(IMAGE):$(VERSION)-local)"
+	@echo ">> Test build local ($(IMAGE):$(VERSION))"
 	DOCKER_BUILDKIT=1 docker buildx build \
-		--load \
-		--pull \
 		--build-arg SOURCE_DATE_EPOCH=$(SRC_EPOCH) \
 		--provenance=true \
 		--sbom=true \
+		--no-cache \
 		$(LABEL_FLAGS) \
-		--tag $(IMAGE):$(VERSION)-local \
+		--tag $(IMAGE):$(VERSION) \
+		--load \
 		.
 
 publish: login setup-builder
 	@echo ">> Build & push $(IMAGE):$(VERSION) [$(PLATFORMS)]"
 	DOCKER_BUILDKIT=1 docker buildx build \
+		--no-cache \
 		--platform $(PLATFORMS) \
-		--pull \
 		--provenance=true \
 		--sbom=true \
 		--build-arg SOURCE_DATE_EPOCH=$(SRC_EPOCH) \
 		$(LABEL_FLAGS) \
-		--cache-from type=registry,ref=$(REGISTRY)/$(IMAGE):$(VERSION) \
 		--cache-to   type=inline,mode=max \
 		--tag $(IMAGE):$(VERSION) \
 		--push \
