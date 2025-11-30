@@ -4,7 +4,7 @@
 [![Docker Pulls](https://img.shields.io/docker/pulls/mztrix/php-fpm?logo=docker)](https://hub.docker.com/r/mztrix/php-fpm)
 [![Image Size](https://img.shields.io/docker/image-size/mztrix/php-fpm/latest?logo=docker)](https://hub.docker.com/r/mztrix/php-fpm/tags)
 
-[![PHP](https://img.shields.io/badge/PHP-8.4-777bb3?logo=php&logoColor=white)](https://www.php.net/releases/8.4/en.php)
+[![PHP](https://img.shields.io/badge/PHP-8.5-777bb3?logo=php&logoColor=white)](https://www.php.net/releases/8.5/en.php)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 An optimized Docker image for PHP applications on Alpine Linux - lightweight and flexible for developers and system administrators.
@@ -26,7 +26,7 @@ The required tools depend on your use case:
     - **[Docker Compose](https://docs.docker.com/compose/install/)**: Required for managing multiple containers via `compose.yaml`.
 
 ## Overview
-- Alpine-based image (Dockerfile) with PHP 8.4 FPM and essentials.
+- Alpine-based image (Dockerfile) with PHP 8.5 FPM and essentials.
 - FPM socket at `/var/run/php/www.sock`, suitable for sharing with a reverse proxy.
 - Simple entrypoint and default command: php-fpm -F.
 - Healthcheck using cgi-fcgi that hits /ping and expects "pong".
@@ -54,8 +54,8 @@ docker compose logs -f php
 ## Usage with Docker Compose
 - compose.yaml defines the minimal php service.
 - compose.override.yaml(.dist) shows useful local mounts:
-  - `.docker/php.ini` -> `/etc/php84/php.ini`
-  - `.docker/php-fpm.d/www.conf `-> `/etc/php84/php-fpm.d/www.conf`
+  - `.docker/php.ini` -> `/etc/php85/php.ini`
+  - `.docker/php-fpm.d/www.conf `-> `/etc/php85/php-fpm.d/www.conf`
   - fpm-sock volume -> `/var/run/php`
 
 Environment/build variable:
