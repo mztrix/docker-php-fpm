@@ -4,8 +4,8 @@ x-php-attributes: &php-attributes
     context: .                # Specifies the build context (current directory)
     target: base              # Target stage for multistage Docker builds
   volumes:
-    - .docker/php.ini:/etc/php84/php.ini                      # Mount custom PHP configuration file
-    - .docker/php-fpm.d/www.conf:/etc/php84/php-fpm.d/www.conf # Mount custom PHP-FPM pool configuration
+    - .docker/php.ini:/etc/php85/php.ini                      # Mount custom PHP configuration file
+    - .docker/php-fpm.d/www.conf:/etc/php85/php-fpm.d/www.conf # Mount custom PHP-FPM pool configuration
     - fpm-sock:/var/run/php                                    # Volume for PHP-FPM UNIX socket for inter-service communication
 
 # Service definition using the reusable attributes
