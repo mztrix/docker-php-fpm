@@ -40,3 +40,19 @@ HEALTHCHECK \
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint"]
 
 CMD ["/usr/sbin/php-fpm85", "-F"]
+
+FROM base AS debug
+
+RUN --mount=type=cache,target=/var/cache/apk \
+    set -eux; \
+    apk add --no-cache --no-progress php85-pecl-xdebug; \
+    echo "zend_extension=xdebug" > /etc/php85/conf.d/50_xdebug.ini; \
+    echo "xdebug.mode=debug,develop" >> /etc/php85/conf.d/50_xdebug.ini; \
+    echo "xdebug.start_with_request=yes" >> /etc/php85/conf.d/50_xdebug.ini; \
+    echo "xdebug.client_host=host.docker.internal" >> /etc/php85/conf.d/50_xdebug.ini; \
+    echo "xdebug.client_port=9003" >> /etc/php85/conf.d/50_xdebug.ini
+
+ENV APP_ENV=debug \
+    XDEBUG_MODE=debug,develop \
+    XDEBUG_ENABLED=1 \
+    PHP_IDE_CONFIG="serverName=app"
