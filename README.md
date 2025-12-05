@@ -36,7 +36,7 @@ The required tools depend on your use case:
 ```bash
 git clone https://github.com/mztrix/docker-php-fpm
 cd docker-php-fpm
-cp compose.override.yaml.dist compose.override.yaml   # recommended for local use
+cp compose.override.dist.yaml compose.override.yaml   # recommended for local use
 ```
 
 2) Start PHP-FPM
