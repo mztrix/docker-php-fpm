@@ -1,8 +1,5 @@
 x-php-attributes: &php-attributes
   image: ${IMAGES_PREFIX:-mztrix/php-fpm}
-  build:
-    context: .
-    target: base
   restart: unless-stopped
   healthcheck:
     test: [ "CMD", "healthcheck" ]
