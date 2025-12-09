@@ -1,18 +1,19 @@
-# Reusable attributes for PHP service configuration
 x-php-attributes: &php-attributes
   build:
-    context: .                # Specifies the build context (current directory)
-    target: base              # Target stage for multistage Docker builds
+    context: .
+    target: base #availables targets: base, xdebug @see Dockerfile stages
   volumes:
-    - .docker/php.ini:/etc/php85/php.ini                      # Mount custom PHP configuration file
-    - .docker/php-fpm.d/www.conf:/etc/php85/php-fpm.d/www.conf # Mount custom PHP-FPM pool configuration
-    - fpm-sock:/var/run/php                                    # Volume for PHP-FPM UNIX socket for inter-service communication
+#    - .docker/conf.d/50_xdebug.ini:/etc/php85/conf.d/50_xdebug.ini
+    - .docker/conf.d/opcache.ini:/etc/php85/conf.d/opcache.ini
+    - .docker/php.ini:/etc/php85/php.ini
+    - .docker/php-fpm.d/www.conf:/etc/php85/php-fpm.d/www.conf
+    - fpm-sock:/var/run/php
+  extra_hosts:
+    - host.docker.internal:host-gateway
 
-# Service definition using the reusable attributes
+
 services:
-  php:
-    <<: *php-attributes  # Inherits configuration from the defined attributes
+  php: *php-attributes
 
-# Persistent volumes
 volumes:
-  fpm-sock:                  # Volume to persist the PHP-FPM socket
+  fpm-sock:

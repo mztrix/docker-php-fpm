@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.7
+# syntax=docker/dockerfile:1.19.0
 
 ARG ALPINE_VERSION=edge
 
@@ -6,7 +6,7 @@ FROM alpine:${ALPINE_VERSION} AS base
 
 WORKDIR /var/www
 
-RUN apk update && apk upgrade --no-cache
+RUN apk upgrade --no-cache
 
 RUN --mount=type=cache,target=/var/cache/apk \
     set -eux; \
@@ -20,8 +20,8 @@ RUN --mount=type=cache,target=/var/cache/apk \
     chown -R www-data:www-data /var/www
 
 COPY --link .docker/php.ini /etc/php85/php.ini
-COPY --link .docker/conf.d/* /etc/php85/conf.d/
-COPY --link .docker/php-fpm.d/* /etc/php85/php-fpm.d/www.conf
+COPY --link .docker/conf.d/opcache.ini /etc/php85/conf.d/opcache.ini
+COPY --link .docker/php-fpm.d/www.conf /etc/php85/php-fpm.d/www.conf
 
 COPY --link .docker/healthcheck.sh /usr/local/bin/healthcheck
 COPY --link .docker/docker-entrypoint.sh /usr/local/bin/docker-entrypoint
@@ -39,20 +39,14 @@ HEALTHCHECK \
 
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint"]
 
-CMD ["/usr/sbin/php-fpm85", "-F"]
+CMD ["php-fpm", "-F"]
 
-FROM base AS debug
+# ------------------------------------------------------------------------------
+
+FROM base AS xdebug
 
 RUN --mount=type=cache,target=/var/cache/apk \
     set -eux; \
-    apk add --no-cache --no-progress php85-pecl-xdebug; \
-    echo "zend_extension=xdebug" > /etc/php85/conf.d/50_xdebug.ini; \
-    echo "xdebug.mode=debug,develop" >> /etc/php85/conf.d/50_xdebug.ini; \
-    echo "xdebug.start_with_request=yes" >> /etc/php85/conf.d/50_xdebug.ini; \
-    echo "xdebug.client_host=host.docker.internal" >> /etc/php85/conf.d/50_xdebug.ini; \
-    echo "xdebug.client_port=9003" >> /etc/php85/conf.d/50_xdebug.ini
+    apk add --no-cache --no-progress php85-pecl-xdebug
 
-ENV APP_ENV=debug \
-    XDEBUG_MODE=debug,develop \
-    XDEBUG_ENABLED=1 \
-    PHP_IDE_CONFIG="serverName=app"
+COPY --link .docker/conf.d/50_xdebug.ini /etc/php85/conf.d/50_xdebug.ini
