@@ -50,3 +50,5 @@ RUN --mount=type=cache,target=/var/cache/apk \
     apk add --no-cache --no-progress php85-pecl-xdebug
 
 COPY --link .docker/conf.d/50_xdebug.ini /etc/php85/conf.d/50_xdebug.ini
+
+RUN install -o www-data -g www-data -m 644 /dev/null /tmp/xdebug.log
