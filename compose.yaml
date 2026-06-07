@@ -1,13 +1,6 @@
 x-php-attributes: &php-attributes
   image: ${IMAGES_PREFIX:-mztrix/php-fpm}
   restart: unless-stopped
-  healthcheck:
-    test: [ "CMD", "healthcheck" ]
-    interval: 1s
-    timeout: 1s
-    retries: 3
-  entrypoint: ["docker-entrypoint"]
-  command: ["php-fpm", "-F"]
 
 services:
   php: *php-attributes
