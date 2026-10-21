@@ -15,6 +15,7 @@ REGISTRY     ?= docker.io
 PLATFORMS := linux/amd64,linux/arm64
 
 STAGE_TARGET ?= base
+ALPINE_VERSION ?= edge
 
 GIT_REV      := $(shell git rev-parse --short HEAD 2>/dev/null || echo unknown)
 SRC_EPOCH    := $(shell git log -1 --format=%ct 2>/dev/null || date +%s)
@@ -66,6 +67,7 @@ test: setup-builder
 		--provenance=true \
 		--sbom=true \
 		--build-arg SOURCE_DATE_EPOCH=$(SRC_EPOCH) \
+		--build-arg ALPINE_VERSION=$(ALPINE_VERSION) \
 		$(LABEL_FLAGS) \
 		--cache-to   type=inline,mode=max \
 		--tag $(IMAGE):$(VERSION) \
@@ -81,6 +83,7 @@ publish: login setup-builder
 		--provenance=true \
 		--sbom=true \
 		--build-arg SOURCE_DATE_EPOCH=$(SRC_EPOCH) \
+		--build-arg ALPINE_VERSION=$(ALPINE_VERSION) \
 		$(LABEL_FLAGS) \
 		--cache-to   type=inline,mode=max \
 		--tag $(IMAGE):$(VERSION) \
